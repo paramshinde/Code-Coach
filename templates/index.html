@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeCoach | Murf AI Hackathon</title>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --chat-bg: #1e293b;
+            --primary: #3b82f6;
+            --accent: #10b981;
+            --text-primary: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Modal for Topic Selection */
+        #topic-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--chat-bg);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+            border: 1px solid #334155;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .topic-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #334155;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .topic-btn:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Main App */
+        .app-container {
+            width: 95%;
+            max-width: 900px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--chat-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #334155;
+        }
+
+        .header {
+            padding: 15px 20px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h2 { margin: 0; font-size: 1.5em; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .badge { background: var(--accent); color: #000; padding: 5px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold; }
+        
+        #download-btn {
+            background: transparent; border: 1px solid #334155; color: #94a3b8;
+            padding: 5px 10px; border-radius: 5px; cursor: pointer; transition: all 0.2s;
+        }
+        #download-btn:hover { background: #334155; color: white; }
+
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        /* Markdown Styles within messages */
+        .message pre {
+            background: #0d1117;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+        }
+        .message code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        .message p { margin: 0 0 10px 0; }
+        .message p:last-child { margin: 0; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .ai-msg {
+            align-self: flex-start;
+            background: #334155;
+            border-bottom-left-radius: 2px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .user-msg {
+            align-self: flex-end;
+            background: var(--primary);
+            border-bottom-right-radius: 2px;
+        }
+
+        /* Visualizer Area */
+        .controls-area {
+            background: #0f172a;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 1px solid #334155;
+        }
+
+        #visualizer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 30px;
+            gap: 5px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #visualizer.active { opacity: 1; }
+
+        .bar {
+            width: 6px;
+            background: var(--accent);
+            border-radius: 3px;
+            animation: sound 0.5s infinite ease-in-out alternate;
+        }
+        .bar:nth-child(1) { height: 15px; animation-delay: 0.1s; }
+        .bar:nth-child(2) { height: 25px; animation-delay: 0.2s; }
+        .bar:nth-child(3) { height: 35px; animation-delay: 0.3s; }
+        .bar:nth-child(4) { height: 25px; animation-delay: 0.4s; }
+        .bar:nth-child(5) { height: 15px; animation-delay: 0.5s; }
+        @keyframes sound { from { height: 10px; } to { height: 35px; } }
+
+        /* Input Controls */
+        .input-wrapper {
+            display: flex;
+            width: 100%;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        #text-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #text-input:focus { border-color: var(--primary); }
+
+        .action-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .action-btn:hover { transform: scale(1.1); }
+        #send-btn { background: var(--primary); }
+        #mic-btn { background: #ef4444; }
+
+        #mic-btn.listening {
+            animation: pulse 1.5s infinite;
+            background: #dc2626;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .status-text { color: #94a3b8; font-size: 0.8em; margin-top: 8px;}
+
+    </style>
+</head>
+<body>
+
+    <!-- TOPIC SELECTION MODAL -->
+    <div id="topic-modal">
+        <div class="modal-content">
+            <h1 style="color: var(--primary);">CodeCoach 🐍</h1>
+            <p>Select your interview topic to begin:</p>
+            <button class="topic-btn" onclick="selectTopic('Python Basics')">Python Basics</button>
+            <button class="topic-btn" onclick="selectTopic('Data Structures')">Data Structures</button>
+            <button class="topic-btn" onclick="selectTopic('Machine Learning')">Machine Learning</button>
+            <button class="topic-btn" onclick="selectTopic('System Design')">System Design</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="app-container">
+        <div class="header">
+            <div>
+                <h2>CodeCoach</h2>
+                <span style="font-size: 0.8em; color: #94a3b8;">Powered by Murf Falcon & Gemini</span>
+            </div>
+            <div class="header-actions">
+                <div class="badge" id="topic-badge">General</div>
+                <button id="download-btn" onclick="downloadTranscript()" title="Download Transcript">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chat"></div>
+
+        <div class="controls-area">
+            <div id="visualizer">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+
+            <div class="input-wrapper">
+                <input type="text" id="text-input" placeholder="Type answer..." onkeypress="handleKeyPress(event)">
+                <button id="send-btn" class="action-btn" onclick="sendText()"><i class="fas fa-paper-plane"></i></button>
+                <button id="mic-btn" class="action-btn" onclick="startMic()"><i class="fas fa-microphone"></i></button>
+            </div>
+            
+            <div class="status-text" id="status">Ready</div>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat');
+        const statusDiv = document.getElementById('status');
+        const micBtn = document.getElementById('mic-btn');
+        const visualizer = document.getElementById('visualizer');
+        const topicModal = document.getElementById('topic-modal');
+        const topicBadge = document.getElementById('topic-badge');
+        const textInput = document.getElementById('text-input');
+        
+        // Store conversation for download
+        let conversationLog = [];
+
+        // Configure Marked to use Highlight.js
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+                return highlight.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+
+        async function selectTopic(topic) {
+            topicModal.style.display = 'none';
+            topicBadge.innerText = topic;
+            
+            const res = await fetch('/set_topic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: topic })
+            });
+            const data = await res.json();
+            
+            addMessage(data.message, 'ai-msg');
+            playAudio(data.audio_url);
+        }
+
+        async function sendText() {
+            const text = textInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user-msg');
+            textInput.value = '';
+            statusDiv.innerText = "CodeCoach is thinking...";
+
+            try {
+                const response = await fetch('/process_interaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                handleResponse(data);
+            } catch (error) {
+                console.error("Error:", error);
+                statusDiv.innerText = "Connection Error";
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendText();
+        }
+
+        async function startMic() {
+            micBtn.classList.add('listening');
+            statusDiv.innerText = "Listening... (Speak now)";
+            try {
+                const response = await fetch('/process_interaction', { method: 'POST' });
+                const data = await response.json();
+                handleResponse(data);
+            } catch (error) {
+                console.error("Error:", error);
+                statusDiv.innerText = "Connection Error";
+            } finally {
+                micBtn.classList.remove('listening');
+            }
+        }
+
+        function handleResponse(data) {
+            statusDiv.innerText = "Ready";
+            if (data.status === 'error') {
+                statusDiv.innerText = data.message;
+                return;
+            }
+            
+            // Logic to prevent duplicate user messages from Mic
+            const lastMsg = chatWindow.lastElementChild;
+            const lastUserText = conversationLog.length > 0 && conversationLog[conversationLog.length - 1].role === 'User' ? conversationLog[conversationLog.length - 1].text : '';
+
+            // If we didn't just type this, add it
+            if (data.user_text && data.user_text !== lastUserText) {
+                addMessage(data.user_text, 'user-msg');
+            }
+
+            addMessage(data.ai_text, 'ai-msg');
+            playAudio(data.audio_url);
+        }
+
+        function playAudio(url) {
+            const audio = new Audio(url);
+            visualizer.classList.add('active');
+            audio.play();
+            audio.onended = () => { visualizer.classList.remove('active'); };
+        }
+
+        function addMessage(text, className) {
+            const div = document.createElement('div');
+            div.classList.add('message', className);
+            
+            // Log for transcript
+            const role = className === 'user-msg' ? 'User' : 'CodeCoach';
+            conversationLog.push({ role: role, text: text });
+
+            // Render Markdown for AI messages
+            if (className === 'ai-msg') {
+                div.innerHTML = marked.parse(text);
+            } else {
+                div.innerText = text;
+            }
+            
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function downloadTranscript() {
+            let content = "CodeCoach Interview Transcript\n";
+            content += "Date: " + new Date().toLocaleString() + "\n";
+            content += "Topic: " + topicBadge.innerText + "\n";
+            content += "================================\n\n";
+
+            conversationLog.forEach(entry => {
+                content += `${entry.role}: ${entry.text}\n\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CodeCoach_Transcript_${Date.now()}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
