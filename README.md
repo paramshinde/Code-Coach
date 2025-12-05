@@ -46,4 +46,4 @@ Google Gemini (LLM)
 We rely on the Gemini 2.0 Flash model for sub-second generation of technical interview questions.
 # Demo Video
 [Link to Demo Video] (Please update this link after uploading your video!)](https://drive.google.com/drive/folders/17DmjhCqnDferZ5gi0tTHFXt-pAhnXomh?usp=sharing)
-Built by Param Shinde for Techfest 2025-26.
+  Built by Param Shinde for Techfest 2025-26.
