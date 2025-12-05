@@ -1,18 +1,13 @@
 CodeCoach: The AI Interviewer
 Submission for Techfest 2025-26 MurfVoice Agent Hackathon
-CodeCoach is a real-time, voice-interactive technical interviewer designed to help students master
-Python. It replaces the anxiety of mock interviews with a friendly, ultra-fast AI coach that listens to
-your voice, evaluates your answers, and provides instant vocal feedback.
+CodeCoach is a real-time, voice-interactive technical interviewer designed to help students master Python. 
+It replaces the anxiety of mock interviews with a friendly, ultra-fast AI coach that listens to your voice, evaluates your answers, and provides instant vocal feedback.
 Key Features
-Ultra-Low Latency: Powered by the Murf Falcon Streaming API, ensuring the AI speaks
-back instantly without the "robotic pause."
+Ultra-Low Latency: Powered by the Murf Falcon Streaming API, ensuring the AI speaks back instantly without the "robotic pause."
 Real-TimeVoice Input: Integrated with Deepgram Nova-2 for high-precision speech-totext, capable of understanding technical jargon (e.g., "tuple," "recursion").
-Intelligent Feedback: Uses Google Gemini 2.0 Flash to grade answers, ask follow-up
-questions, and adapt to the user's skill level.
-Topic Selection: Users can switch between "Python Basics," "Data Structures," "Machine
-Learning," and "System Design."
-CodeVisualizer: The frontend features a live code syntax highlighter and an audio visualizer
-that animates while the AI speaks.
+Intelligent Feedback: Uses Google Gemini 2.0 Flash to grade answers, ask follow-up questions, and adapt to the user's skill level.
+Topic Selection: Users can switch between "Python Basics," "Data Structures," "Machine Learning," and "System Design."
+CodeVisualizer: The frontend features a live code syntax highlighter and an audio visualizer that animates while the AI speaks.
 Transcript Download: Users can download their entire interview session for review.
 Tech Stack
 Frontend: HTML5, CSS3, JavaScript (with highlight.js & marked.js )
@@ -56,3 +51,4 @@ Built by Param Shinde for Techfest 2025-26.
 https://gemini.google.com/app/7afd2c725165df3e?is_sa=1&is_sa=1&android-min-version=301356232&ios-min-version=322.0&campaign_id=bkw s&… 2/3
 12/5/25, 7:58 PM Google Gemini
 https://gemini.google.com/app/7afd2c725165df3e?is_sa=1&is_sa=1&android-min-version=301356232&ios-min-version=322.0&campaign_id=bkw s&… 3/3
+
