@@ -1,4 +1,4 @@
-CodeCoach: The AI Interviewer
+# CodeCoach: The AI Interviewer
 Submission for Techfest 2025-26 MurfVoice Agent Hackathon
 CodeCoach is a real-time, voice-interactive technical interviewer designed to help students master Python. 
 It replaces the anxiety of mock interviews with a friendly, ultra-fast AI coach that listens to your voice, evaluates your answers, and provides instant vocal feedback.
@@ -9,13 +9,13 @@ Intelligent Feedback: Uses Google Gemini 2.0 Flash to grade answers, ask follow-
 Topic Selection: Users can switch between "Python Basics," "Data Structures," "Machine Learning," and "System Design."
 CodeVisualizer: The frontend features a live code syntax highlighter and an audio visualizer that animates while the AI speaks.
 Transcript Download: Users can download their entire interview session for review.
-Tech Stack
+# Tech Stack
 Frontend: HTML5, CSS3, JavaScript (with highlight.js & marked.js )
 Backend: Flask (Python)
 Text-to-Speech (TTS): Murf Falcon API (Streaming Endpoint)
 Speech-to-Text (ASR): Deepgram Nova-2
 LLM (Brain): Google Gemini 2.0 Flash
-Setup Instructions
+# Setup Instructions
 1. Clone the Repository
 git clone [https://github.com/paramshinde/Code-Coach.git](https://github.com/paramshinde/Co
 cd Code-Coach
@@ -44,11 +44,6 @@ Deepgram (ASR)
 We use the Nova-2 model via the transcribe_file method for speed and accuracy.
 Google Gemini (LLM)
 We rely on the Gemini 2.0 Flash model for sub-second generation of technical interview questions.
-🎥Demo Video
-[Link to Demo Video] (Please update this link after uploading your video!)
+# Demo Video
+[Link to Demo Video] (Please update this link after uploading your video!)](https://drive.google.com/drive/folders/17DmjhCqnDferZ5gi0tTHFXt-pAhnXomh?usp=sharing)
 Built by Param Shinde for Techfest 2025-26.
-12/5/25, 7:58 PM Google Gemini
-https://gemini.google.com/app/7afd2c725165df3e?is_sa=1&is_sa=1&android-min-version=301356232&ios-min-version=322.0&campaign_id=bkw s&… 2/3
-12/5/25, 7:58 PM Google Gemini
-https://gemini.google.com/app/7afd2c725165df3e?is_sa=1&is_sa=1&android-min-version=301356232&ios-min-version=322.0&campaign_id=bkw s&… 3/3
-
