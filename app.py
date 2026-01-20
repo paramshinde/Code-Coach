@@ -17,17 +17,14 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 MURF_VOICE_ID = "en-US-caleb" 
 
 # --- CLIENT SETUP ---
-# 1. Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 try:
     model = genai.GenerativeModel('gemini-2.0-flash')
 except:
     model = genai.GenerativeModel('gemini-pro')
 
-# 2. Murf
 murf_client = Murf(api_key=MURF_API_KEY, region=MurfRegion.GLOBAL)
 
-# 3. Deepgram
 try:
     deepgram = DeepgramClient(DEEPGRAM_API_KEY)
 except Exception as e:
@@ -46,8 +43,7 @@ def get_ai_response(user_text):
         prompt = (
             f"You are a friendly technical interviewer named CodeCoach. "
             f"The user has chosen to practice: '{current_topic}'. "
-            "Keep your answers concise (maximum 2 sentences) so they work well for voice. "
-            "If the user says 'ready', start with a question about the topic. "
+            "Keep your answers concise (maximum 2 sentences). "
             f"User says: {user_text}"
         )
         response = model.generate_content(prompt)
@@ -57,12 +53,9 @@ def get_ai_response(user_text):
         return "I'm having trouble connecting to my brain right now."
 
 def generate_falcon_audio(text):
-    """Generates audio file using Murf Falcon Streaming."""
     filename = f"response_{int(time.time())}.mp3"
     filepath = os.path.join(AUDIO_DIR, filename)
-    
     try:
-        # Using FALCON model for ultra-low latency
         audio_stream = murf_client.text_to_speech.stream(
             text=text,
             voice_id=MURF_VOICE_ID,
@@ -80,42 +73,55 @@ def generate_falcon_audio(text):
         return None
 
 def listen_to_mic():
-    """Captures audio via PyAudio and sends to Deepgram API."""
+    """Captures audio: Tries Deepgram first -> Falls back to Google."""
     r = sr.Recognizer()
+    
+    # Reduce the silence time required to consider the speech "done"
+    r.pause_threshold = 0.6  # Default is 0.8
+    # Reduce non-speaking duration to make it snappier
+    r.non_speaking_duration = 0.3 # Default is 0.5
+    
     try:
-        # CRITICAL: Use device_index=2 based on your setup. 
-        # If it stops working, check 'python check_mics.py' again.
+        # CRITICAL: Device Index 2 (Realtek)
         with sr.Microphone(device_index=2) as source:
-            print("Listening (Deepgram)...")
-            r.adjust_for_ambient_noise(source, duration=0.5)
+            print("🎤 Listening...")
+            # Reduce calibration time from 0.5 to 0.2 (Saves 300ms per turn)
+            r.adjust_for_ambient_noise(source, duration=0.2)
             
-            # 1. Capture Raw Audio
-            audio = r.listen(source, timeout=4, phrase_time_limit=8)
-            audio_data = audio.get_wav_data()
+            # OPTIMIZATION: Reduced limit from 8s to 5s to make uploads smaller/faster
+            audio = r.listen(source, timeout=4, phrase_time_limit=5)
             
-            # 2. Send to Deepgram for Transcription
-            payload = {'buffer': audio_data}
-            options = PrerecordedOptions(
-                model="nova-2",      # Deepgram's fastest model
-                smart_format=True,
-                language="en"
-            )
-            
-            # Updated to use .listen.rest instead of .listen.prerecorded to fix deprecation warning
-            response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
-            transcript = response.results.channels[0].alternatives[0].transcript
-            
-            print(f"Deepgram Heard: {transcript}")
-            return transcript
+            # --- ATTEMPT 1: DEEPGRAM ---
+            try:
+                print("⚡ Sending to Deepgram...")
+                audio_data = audio.get_wav_data()
+                payload = {'buffer': audio_data}
+                options = PrerecordedOptions(
+                    model="nova-2", 
+                    smart_format=True, 
+                    language="en"
+                )
+                response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
+                transcript = response.results.channels[0].alternatives[0].transcript
+                
+                if not transcript: raise ValueError("Empty Deepgram transcript")
+                
+                print(f"   Deepgram Heard: {transcript}")
+                return transcript
+
+            except Exception as dg_error:
+                # --- ATTEMPT 2: GOOGLE FALLBACK ---
+                print(f"    Deepgram Failed ({dg_error}). Switching to Google...")
+                transcript = r.recognize_google(audio)
+                print(f"   Google Heard: {transcript}")
+                return transcript
 
     except sr.WaitTimeoutError:
         print("Timeout: No speech detected.")
         return None
     except Exception as e:
-        print(f"Mic/Deepgram Error: {e}")
+        print(f"Mic Error: {e}")
         return None
-
-# --- FLASK ROUTES ---
 
 @app.route("/")
 def home():
@@ -126,20 +132,12 @@ def set_topic():
     global current_topic
     data = request.json
     current_topic = data.get("topic", "General Python")
-    print(f"Topic changed to: {current_topic}")
-    
-    welcome_text = f"Great. I am ready to interview you on {current_topic}. Say ready when you are."
+    welcome_text = f"Great. Ready to interview on {current_topic}."
     audio_file = generate_falcon_audio(welcome_text)
-    
-    if audio_file:
-        audio_url = url_for('static', filename=f'audio/{audio_file}')
-        return jsonify({"status": "success", "message": welcome_text, "audio_url": audio_url})
-    else:
-        return jsonify({"status": "error", "message": "Audio generation failed"})
+    return jsonify({"status": "success", "message": welcome_text, "audio_url": url_for('static', filename=f'audio/{audio_file}')})
 
 @app.route("/process_interaction", methods=["POST"])
 def process_interaction():
-    # Check if text input is provided in the request
     data = request.get_json(silent=True)
     user_text = None
     
@@ -147,28 +145,22 @@ def process_interaction():
         user_text = data["text"]
         print(f"User Typed: {user_text}")
     else:
-        # 1. Listen (Deepgram)
         user_text = listen_to_mic()
     
     if not user_text:
-        return jsonify({"status": "error", "message": "No speech or text detected"})
+        return jsonify({"status": "error", "message": "No speech detected. Try typing?"})
 
-    # 2. Think (Gemini)
     ai_response = get_ai_response(user_text)
-
-    # 3. Speak (Murf Falcon)
     audio_file = generate_falcon_audio(ai_response)
     
     if not audio_file:
-         return jsonify({"status": "error", "message": "Audio generation failed"})
+        return jsonify({"status": "error", "message": "Audio generation failed"})
 
-    # 4. Return to UI
-    audio_url = url_for('static', filename=f'audio/{audio_file}')
     return jsonify({
         "status": "success",
         "user_text": user_text,
         "ai_text": ai_response,
-        "audio_url": audio_url
+        "audio_url": url_for('static', filename=f'audio/{audio_file}')
     })
 
 if __name__ == "__main__":

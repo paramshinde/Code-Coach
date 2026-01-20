@@ -1,0 +1,7 @@
+flask
+murf-python-sdk
+deepgram-sdk==3.*
+google-generativeai
+python-dotenv
+SpeechRecognition
+pyaudio
